@@ -13,20 +13,24 @@ print('numpy: '+np.version.full_version)
 import matplotlib.animation as animation
 import matplotlib
 print('matplotlib: '+matplotlib.__version__)
-#from matplotlib.colors import LightSource 
+from matplotlib.colors import LightSource 
+from matplotlib import cm
+#import scipy.ndimage.filters
 
 
-Nfrm = 100
-fps = 10
+Nfrm = 400
+fps = 24
 alpha=2
+
 
 fig = plt.figure()
 ax = fig.add_subplot(111, projection='3d')
 
 # Make the X, Y meshgrid.
-xs = np.linspace(-1, 1, 10)
-ys = np.linspace(-1, 1, 10)
+xs = np.linspace(-1, 1, 40)
+ys = np.linspace(-1, 1, 40)
 X, Y = np.meshgrid(xs, ys)
+
 
 
 
@@ -57,14 +61,20 @@ def laplace(a_frame):
 def generate_all_frames(Z):
     i=2
     while i<Nfrm:
-        Z.append(Z[-1]+Z[-1]-Z[-2]+alpha*laplace(Z[-1]))
+        Z.append(Z[-1]+(Z[-1]-Z[-2])+alpha*laplace(Z[-1]))
         i+=1
     return Z
 
-           
+def init_bump(X,Y,x_0=0, y_0=0):
+    radius=20
+    height=.5
+    W=0*X
+    W=height*np.exp(-radius*((X-x_0)**2+(Y-y_0)**2))
+    return W
+            
       
 Z = []
-Z.append(X*0+1/4)
+Z.append(init_bump(X,Y))
 Z.append(Z[0])
 #print (Z) 
 generate_all_frames(Z)
@@ -86,14 +96,16 @@ def update(idx):
     # Plot the new wireframe and pause briefly before continuing.
     W = np.array(Z[idx])
     #print(f"Frame: {idx} shift: {.05*idx}")
-    #ls = LightSource(270,45)
-    wframe = ax.plot_wireframe(X, Y, W, rstride=1, cstride=1, color='k', linewidth=0.5)
+    ls = LightSource(45,45)
+    rgb = np.ones((W.shape[0], W.shape[1], 3))
+    illuminated_surface = ls.shade_rgb(rgb,W)
+    wframe = ax.plot_surface(X, Y, W, rstride=1, cstride=1, color='k', linewidth=0, facecolors=illuminated_surface)
 
 ani = animation.FuncAnimation(fig, update, Nfrm, interval=1000/fps)
 
 
 
 
-#fn = 'plot_wireframe_funcanimation'
-#ani.save(fn+'.mp4',writer='ffmpeg',fps=fps)
+fn = 'plot_wireframe_funcanimation'
+ani.save(fn+'.mp4',writer='ffmpeg',fps=fps)
 
